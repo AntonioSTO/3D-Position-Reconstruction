@@ -14,11 +14,6 @@ def camera_parameters(file):
     return K, R, T, res, dis
 
 
-#Load cameras parameters
-K0, R0, T0, res0, dis0 = camera_parameters('data/params/0.json')
-K1, R1, T1, res1, dis1 = camera_parameters('data/params/1.json')
-K2, R2, T2, res2, dis2 = camera_parameters('data/params/2.json')
-K3, R3, T3, res3, dis3 = camera_parameters('data/params/3.json')
 
 
 
