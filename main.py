@@ -1,68 +1,50 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import math
-import types
-# from types import NoneType
-import json
-import cv2 as cv
-from cv2 import aruco
 from projection_M_builder import getProjection
 from parameters import camera_parameters
 from detect_pos_video import arucoDetect
+from calculate_3d_coordinates import calculate_3d_coordinates
 
-if __name__ == "__main__":
-
+def main():
     np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
 
-    # Load cameras parameters
-    K0, R0, T0, res0, dis0 = camera_parameters('data/params/0.json')
-    K1, R1, T1, res1, dis1 = camera_parameters('data/params/1.json')
-    K2, R2, T2, res2, dis2 = camera_parameters('data/params/2.json')
-    K3, R3, T3, res3, dis3 = camera_parameters('data/params/3.json')
+    K = []
+    R = []
+    T = []
 
+    # Carrega os parâmetros de cada câmera
+    for idx in range(4):
+        k, r, t, _, _ = camera_parameters(f'data/params/{idx}.json')
+        K.append(k)
+        R.append(r)
+        T.append(t)
+    # K0, R0, T0, _, _ = camera_parameters('data/params/0.json')
+    # K1, R1, T1, _, _ = camera_parameters('data/params/1.json')
+    # ...
+
+
+    #mProj = [P1, P2, P3, P4]  -> matrizes de projeção das 4 câmeras
     mProj = []
-    mProj.append(getProjection(K0, R0, T0))
-    mProj.append(getProjection(K1, R1, T1))
-    mProj.append(getProjection(K2, R2, T2))
-    mProj.append(getProjection(K3, R3, T3))
+    for idx in range(4):
+        mProj.append(getProjection(K[idx], R[idx], T[idx]))
+    # mProj.append(getProjection(K0, R0, T0))
+    # mProj.append(getProjection(K1, R1, T1))
+    # ...
 
+
+    #arucoPos = [pontos_cam0, pontos_cam1, pontos_cam2, pontos_cam3]
     arucoPos = []
-    arucoPos.append(arucoDetect("data/videos/camera-00.mp4"))
-    arucoPos.append(arucoDetect("data/videos/camera-01.mp4"))
-    arucoPos.append(arucoDetect("data/videos/camera-02.mp4"))
-    arucoPos.append(arucoDetect("data/videos/camera-03.mp4"))
+    for idx in range(4):
+        arucoPos.append(arucoDetect(f"data/videos/camera-0{idx}.mp4"))
+    #arucoPos.append(arucoDetect("data/videos/camera-00.mp4"))
+    #arucoPos.append(arucoDetect("data/videos/camera-01.mp4"))
+    #...
 
-    frame_count = len(arucoPos[0])
 
-    x3d = []
-    y3d = []
-    z3d = []
-    for frame in range(frame_count):
-        added_points = 0
-        for cam in range(4):
-            if arucoPos[cam][frame] is not None:
-                if added_points == 0:
-                    B_matrix = np.append(mProj[cam], -1 * arucoPos[cam][frame].T, axis = 1)
+    # Cálculo das coordenadas 3d (pontos no mundo) com as matrizes de projeção e
+    #as posições detectadas nas câmeras pelos marcadores Aruco
+    x3d, y3d, z3d = calculate_3d_coordinates(arucoPos, mProj)
 
-                else:
-                    B_matrix = np.append(B_matrix, np.zeros((3 * added_points, 1)), axis = 1)
-                    new_lines = np.concatenate((mProj[cam], np.zeros((3, added_points)), -1 * arucoPos[cam][frame].T), axis = 1)
-                    B_matrix = np.append(B_matrix, new_lines, axis = 0)
-
-                added_points = added_points + 1
-
-        # Perform SVD(A) = U.S.Vt to estimate the homography
-        U, S, Vt = np.linalg.svd(B_matrix)
-
-        # Reshape last column of V as the 3 dimension point
-        V_last_column = Vt[len(Vt)-1]
-        point_3D = V_last_column[:4]
-        point_3D = point_3D/point_3D[3]
-
-        x3d.append(point_3D[0])
-        y3d.append(point_3D[1])
-        z3d.append(point_3D[2])
-        
     fig = plt.figure(figsize=(10,10))
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(x3d, y3d, z3d)
@@ -70,5 +52,8 @@ if __name__ == "__main__":
     ax.set_xlabel('X Label')
     ax.set_ylabel('Y Label')
     ax.set_zlabel('Z Label')
-
+    ax.axes.set_zlim3d(bottom=-1, top=1)
     plt.show()
+
+if __name__ == "__main__":
+    main()

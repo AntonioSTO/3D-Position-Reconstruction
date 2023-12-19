@@ -1,18 +1,12 @@
-import cv2
 import numpy as np
-from cv2 import aruco
 import cv2 as cv
-import matplotlib.pyplot as plt
-import sys
-
-
 
 def arucoDetect(file_name):
 
-    aruco_dict = aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
-    parameters = aruco.DetectorParameters()
+    aruco_dict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
+    parameters = cv.aruco.DetectorParameters()
     detector = cv.aruco.ArucoDetector(aruco_dict, parameters)
-    vid = cv2.VideoCapture(file_name)
+    vid = cv.VideoCapture(file_name)
 
     arucoCoord = []
 
@@ -23,7 +17,7 @@ def arucoDetect(file_name):
             break
 
         corners, ids, rejectedImgPoints = detector.detectMarkers(img)
-        frame_markers = aruco.drawDetectedMarkers(img.copy(), corners, ids)
+        frame_markers = cv.aruco.drawDetectedMarkers(img.copy(), corners, ids)
         cv.imshow('output', frame_markers)
 
         if cv.waitKey(1) == ord('q'):
@@ -32,10 +26,7 @@ def arucoDetect(file_name):
         if ids is not None and 0 in ids:
             idx = np.where(ids == 0)[0][0]
             x,y = np.mean(corners[idx][0], axis=0).astype(int)
-            
-            
-
-            arucoCoord.append(np.array([[x,y,1]]))
+            arucoCoord.append(np.array([[x,y,1]]))              # m~[i] = [U[i], V[i], 1]^T 
         else:
             arucoCoord.append(None)
     
